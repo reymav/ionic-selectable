@@ -1,4 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { provideIonicAngular } from '@ionic/angular/standalone';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { MultipleValuesTemplatePage } from './multiple-values-template.page';
 
@@ -8,8 +9,9 @@ describe('MultipleValuesTemplatePage', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [MultipleValuesTemplatePage],
+      imports: [MultipleValuesTemplatePage],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      providers: [provideIonicAngular()],
     })
       .compileComponents();
   }));

@@ -1,7 +1,7 @@
-// tslint:disable-next-line:max-line-length
-import { Component, ContentChild, DoCheck, ElementRef, EventEmitter, forwardRef, HostBinding, Input, IterableDiffer, IterableDiffers, OnInit, Optional, Output, Renderer2, TemplateRef, ViewEncapsulation } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Component, ContentChild, DoCheck, ElementRef, EventEmitter, forwardRef, HostBinding, Input, IterableDiffer, IterableDiffers, OnInit, Output, Renderer2, TemplateRef, ViewEncapsulation, inject } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IonItem, ModalController, Platform } from '@ionic/angular';
+import { ModalController, Platform } from '@ionic/angular/standalone';
 import { AnimationBuilder, ModalOptions } from '@ionic/core';
 import { Subscription } from 'rxjs';
 import { IonicSelectableAddItemTemplateDirective } from './ionic-selectable-add-item-template.directive';
@@ -21,11 +21,26 @@ import { IonicSelectableTitleTemplateDirective } from './ionic-selectable-title-
 import { IonicSelectableValueTemplateDirective } from './ionic-selectable-value-template.directive';
 import { IonicSelectableIconTemplateDirective } from './ionic-selectable-icon-template.directive';
 
+/**
+ * A single row rendered by the virtual scroll viewport. Groups are flattened
+ * into this list so that headers and items share one fixed-size stream.
+ */
+export interface IonicSelectableVirtualItem {
+  type: 'header' | 'item';
+  /** Set for `header` rows built from `groupValueField`. */
+  group?: any;
+  /** Set for `header` rows. */
+  text?: string;
+  /** Set for `item` rows. */
+  item?: any;
+}
+
 @Component({
   selector: 'ionic-selectable',
   templateUrl: './ionic-selectable.component.html',
   styleUrls: ['./ionic-selectable.component.scss'],
   encapsulation: ViewEncapsulation.None,
+  imports: [NgTemplateOutlet],
   providers: [{
     provide: NG_VALUE_ACCESSOR,
     useExisting: forwardRef(() => IonicSelectableComponent),
@@ -114,6 +129,29 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
   _itemToAdd: any = null;
   _footerButtonsCount = 0;
   _hasFilteredItems = false;
+  /**
+   * `_filteredGroups` flattened into a single list of headers and items,
+   * consumed by the virtual scroll viewport.
+   */
+  _virtualItems: IonicSelectableVirtualItem[] = [];
+
+  /**
+   * `virtualScrollApproxItemHeight` as a number of pixels, which is what
+   * the CDK fixed size virtual scroll strategy expects.
+   */
+  get _virtualItemHeight(): number {
+    const itemHeight = parseFloat(String(this.virtualScrollApproxItemHeight));
+
+    return isNaN(itemHeight) || itemHeight <= 0 ? 40 : itemHeight;
+  }
+
+  get _virtualItemHeightPx(): string {
+    return `${this._virtualItemHeight}px`;
+  }
+
+  _trackVirtualItem = (index: number, _virtualItem: IonicSelectableVirtualItem): number => {
+    return index;
+  };
 
   /**
    * Text of [Ionic Label](https://ionicframework.com/docs/api/label).
@@ -403,7 +441,10 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
   hasInfiniteScroll = false;
 
   /**
-   * Determines whether Ionic [VirtualScroll](https://ionicframework.com/docs/api/components/virtual-scroll/VirtualScroll/) is enabled.
+   * Determines whether virtual scroll is enabled. When enabled the list is
+   * rendered by Angular CDK [virtual scroll](https://material.angular.io/cdk/scrolling/overview),
+   * so only the visible rows are kept in the DOM. Grouping is supported: groups
+   * are flattened into a single list of headers and items.
    * **Note**: Virtual scroll cannot be used together with infinite scroll.
    * See more on [GitHub](https://github.com/eakoriakin/ionic-selectable/wiki/Documentation#hasvirtualscroll).
    *
@@ -414,14 +455,16 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
   hasVirtualScroll = false;
 
   /**
-   * See Ionic VirtualScroll [approxItemHeight](https://ionicframework.com/docs/api/components/virtual-scroll/VirtualScroll/).
+   * The height of a single row of the virtual scroll list, e.g. `'40px'` or `40`.
+   * Rows are rendered at a fixed height, so both items and group headers are
+   * forced to this height.
    * See more on [GitHub](https://github.com/eakoriakin/ionic-selectable/wiki/Documentation#virtualscrollapproxitemheight).
    *
    * @default '40px'
    * @memberof IonicSelectableComponent
    */
   @Input()
-  virtualScrollApproxItemHeight = '40px';
+  virtualScrollApproxItemHeight: string | number = '40px';
 
   /**
    * A placeholder for Searchbar.
@@ -664,7 +707,7 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
    * @memberof IonicSelectableComponent
    */
   @Input()
-  searchDebounce: Number = 250;
+  searchDebounce: number = 250;
 
   /**
    * A list of items to disable.
@@ -788,24 +831,25 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
   iconTemplate: TemplateRef<any> | undefined;
 
   /**
-   * See Ionic VirtualScroll [headerFn](https://ionicframework.com/docs/api/components/virtual-scroll/VirtualScroll/).
+   * Returns the text of a group header to render before the given item, or
+   * `undefined` when the item shouldn't be preceded by a header.
+   * **Note**: Only used when virtual scroll is enabled and `groupValueField` is not set.
    * See more on [GitHub](https://github.com/eakoriakin/ionic-selectable/wiki/Documentation#virtualscrollheaderfn).
    *
    * @memberof IonicSelectableComponent
    */
   @Input()
-  virtualScrollHeaderFn = (item: any, index: number, items: any[]): string | undefined => {
+  virtualScrollHeaderFn = (_item: any, _index: number, _items: any[]): string | undefined => {
     return undefined;
-  }
+  };
 
-  constructor(
-    private _modalController: ModalController,
-    private _platform: Platform,
-    @Optional() private ionItem: IonItem,
-    private _iterableDiffers: IterableDiffers,
-    private _element: ElementRef,
-    private _renderer: Renderer2
-  ) {
+  private _modalController = inject(ModalController);
+  private _platform = inject(Platform);
+  private _iterableDiffers = inject(IterableDiffers);
+  private _element = inject(ElementRef);
+  private _renderer = inject(Renderer2);
+
+  constructor() {
     if (!this.items || !this.items.length) {
       this.items = [];
     }
@@ -816,11 +860,11 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
   initFocus() { }
 
   enableIonItem(isEnabled: boolean) {
-    if (!this.ionItem) {
+    if (!this._ionItemElement) {
       return;
     }
 
-    this.ionItem.disabled = !isEnabled;
+    this._ionItemElement.disabled = !isEnabled;
   }
 
   _isNullOrWhiteSpace(value: any): boolean {
@@ -837,19 +881,19 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
   }
 
   _hasOnSearch(): boolean {
-    return this.isOnSearchEnabled && this.onSearch.observers.length > 0;
+    return this.isOnSearchEnabled && this.onSearch.observed;
   }
 
   _hasOnSaveItem(): boolean {
-    return this.canSaveItem && this.onSaveItem.observers.length > 0;
+    return this.canSaveItem && this.onSaveItem.observed;
   }
 
   _hasOnAddItem(): boolean {
-    return this.canAddItem && this.onAddItem.observers.length > 0;
+    return this.canAddItem && this.onAddItem.observed;
   }
 
   _hasOnDeleteItem(): boolean {
-    return this.canDeleteItem && this.onDeleteItem.observers.length > 0;
+    return this.canDeleteItem && this.onDeleteItem.observed;
   }
 
   _emitValueChange() {
@@ -952,8 +996,17 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
     this._searchText = '';
   }
 
+  _searchbarInput(event: any) {
+    // Ionic Searchbar fires ionInput on every keystroke and on clear,
+    // ionChange only fires once the value has been committed.
+    this._searchText = event?.detail?.value ?? '';
+    this._filterItems();
+  }
+
   _filterItems() {
     this._setHasSearchText();
+
+    this._resetVirtualScroll();
 
     if (this._hasOnSearch()) {
       // Delegate filtering to the event.
@@ -993,6 +1046,7 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
 
       this._filteredGroups = groups;
       this._hasFilteredItems = !this._areGroupsEmpty(groups);
+      this._setVirtualItems();
       this._emitOnSearchSuccessOrFail(this._hasFilteredItems);
     }
   }
@@ -1198,14 +1252,67 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
     this._close();
   }
 
-  private _getLabelText(): string {
-    return this._ionLabelElement ? this._ionLabelElement.textContent : null;
+  private _getLabelText(): string | undefined {
+    return this._ionLabelElement ? this._ionLabelElement.textContent : undefined;
   }
 
   private _areGroupsEmpty(groups: any) {
     return groups.length === 0 || groups.every((group: any) => {
       return !group.items || group.items.length === 0;
     });
+  }
+
+  /**
+   * Flattens `_filteredGroups` into a single list of header and item rows so
+   * that the virtual scroll viewport can render both from one fixed size stream.
+   * Headers come either from `groupValueField` or, when grouping isn't used,
+   * from `virtualScrollHeaderFn`.
+   */
+  private _setVirtualItems() {
+    if (!this.hasVirtualScroll) {
+      this._virtualItems = [];
+      return;
+    }
+
+    const virtualItems: IonicSelectableVirtualItem[] = [];
+
+    this._filteredGroups.forEach(group => {
+      const items: any[] = group.items || [];
+
+      if (!items.length) {
+        return;
+      }
+
+      if (this._hasGroups) {
+        virtualItems.push({ type: 'header', group: group, text: group.text });
+      }
+
+      items.forEach((item, itemIndex) => {
+        if (!this._hasGroups) {
+          const headerText = this.virtualScrollHeaderFn(item, itemIndex, items);
+
+          if (!this._isNullOrWhiteSpace(headerText)) {
+            virtualItems.push({ type: 'header', text: headerText });
+          }
+        }
+
+        virtualItems.push({ type: 'item', item: item });
+      });
+    });
+
+    this._virtualItems = virtualItems;
+  }
+
+  /**
+   * Brings the virtual scroll viewport back to the first row, e.g. after the
+   * list has been filtered down to a handful of items.
+   */
+  private _resetVirtualScroll() {
+    if (!this.hasVirtualScroll) {
+      return;
+    }
+
+    this._modalComponent?._scrollVirtualScrollToTop();
   }
 
   private _countFooterButtons() {
@@ -1258,6 +1365,7 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
     this._groups = groups;
     this._filteredGroups = this._groups;
     this._hasFilteredItems = !this._areGroupsEmpty(this._filteredGroups);
+    this._setVirtualItems();
   }
 
   private _getPropertyValue(object: any, property: string | undefined): any {
@@ -1271,19 +1379,11 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
   }
 
   private _setIonItemHasFocus(hasFocus: boolean) {
-    if (!this.ionItem) {
-      return;
-    }
-
     // Apply focus CSS class for proper stylying of ion-item/ion-label.
     this._setIonItemCssClass('item-has-focus', hasFocus);
   }
 
   private _setIonItemHasValue() {
-    if (!this.ionItem) {
-      return;
-    }
-
     // Apply value CSS class for proper stylying of ion-item/ion-label.
     this._setIonItemCssClass('item-has-value', this.hasValue());
   }
@@ -1294,7 +1394,7 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
       true : false;
   }
 
-  private propagateOnChange = (_: any) => { };
+  private propagateOnChange = (_value: any) => { };
   private propagateOnTouched = () => { };
 
   private _setIonItemCssClass(cssClass: string, shouldAdd: boolean) {
@@ -1347,21 +1447,19 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
     this._isMD = !this._isIos;
     this._hasObjects = !this._isNullOrWhiteSpace(this.itemValueField);
     // Grouping is supported for objects only.
-    // Ionic VirtualScroll has it's own implementation of grouping.
-    this._hasGroups = Boolean(this._hasObjects && this.groupValueField && !this.hasVirtualScroll);
+    this._hasGroups = Boolean(this._hasObjects && this.groupValueField);
 
-    if (this.ionItem) {
-      this._ionItemElement = this._element.nativeElement.closest('ion-item');
+    this._ionItemElement = this._element.nativeElement.closest('ion-item');
+
+    if (this._ionItemElement) {
       this._setIonItemCssClass('item-interactive', true);
       this._setIonItemCssClass('item-ionic-selectable', true);
 
-      if (this._ionItemElement) {
-        this._ionLabelElement = this._ionItemElement.querySelector('ion-label');
+      this._ionLabelElement = this._ionItemElement.querySelector('ion-label');
 
-        if (this._ionLabelElement) {
-          this._hasIonLabel = true;
-          this._ionLabelPosition = this._ionLabelElement.getAttribute('position') || 'default';
-        }
+      if (this._ionLabelElement) {
+        this._hasIonLabel = true;
+        this._ionLabelPosition = this._ionLabelElement.getAttribute('position') || 'default';
       }
     }
 
@@ -1373,7 +1471,8 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
 
     if (itemsChanges) {
       this._setItems(this.items);
-      this.value = this.value;
+      // Re-run the value setter so that value items are rebuilt from the new items.
+      this.value = this._value;
 
       this.onItemsChange.emit({
         component: this
@@ -1391,8 +1490,6 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
    * @memberof IonicSelectableComponent
    */
   addItem(item: any): Promise<void> {
-    const self = this;
-
     // Adding item triggers onItemsChange.
     // Return a promise that resolves when onItemsChange finishes.
     // We need a promise or user could do something after item has been added,
@@ -1404,15 +1501,18 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
       this._addItemObservable.unsubscribe();
     }
 
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       // Complete callback isn't fired for some reason,
       // so unsubscribe in both success and fail cases.
-      self._addItemObservable = self.onItemsChange.asObservable().subscribe(() => {
-        self._addItemObservable?.unsubscribe();
-        resolve();
-      }, () => {
-        self._addItemObservable?.unsubscribe();
-        reject();
+      this._addItemObservable = this.onItemsChange.asObservable().subscribe({
+        next: () => {
+          this._addItemObservable?.unsubscribe();
+          resolve();
+        },
+        error: () => {
+          this._addItemObservable?.unsubscribe();
+          reject();
+        }
       });
     });
   }
@@ -1427,7 +1527,6 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
  * @memberof IonicSelectableComponent
  */
   deleteItem(item: any): Promise<void> {
-    const self = this;
     let hasValueChanged = false;
 
     // Remove deleted item from selected items.
@@ -1480,15 +1579,18 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
       this._deleteItemObservable.unsubscribe();
     }
 
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       // Complete callback isn't fired for some reason,
       // so unsubscribe in both success and fail cases.
-      self._deleteItemObservable = self.onItemsChange.asObservable().subscribe(() => {
-        self._deleteItemObservable?.unsubscribe();
-        resolve();
-      }, () => {
-        self._deleteItemObservable?.unsubscribe();
-        reject();
+      this._deleteItemObservable = this.onItemsChange.asObservable().subscribe({
+        next: () => {
+          this._deleteItemObservable?.unsubscribe();
+          resolve();
+        },
+        error: () => {
+          this._deleteItemObservable?.unsubscribe();
+          reject();
+        }
       });
     });
   }
@@ -1516,56 +1618,54 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
    * @memberof IonicSelectableComponent
    */
   open(): Promise<void> {
-    const self = this;
-
-    return new Promise(function (resolve, reject) {
-      if (!self._isEnabled || self._isOpened) {
+    return new Promise((resolve, reject) => {
+      if (!this._isEnabled || this._isOpened) {
         reject('IonicSelectable is disabled or already opened.');
         return;
       }
 
-      self._filterItems();
-      self._isOpened = true;
+      this._filterItems();
+      this._isOpened = true;
 
       const modalOptions: ModalOptions = {
         component: IonicSelectableModalComponent,
-        componentProps: { selectComponent: self },
-        backdropDismiss: self._shouldBackdropClose
+        componentProps: { selectComponent: this },
+        backdropDismiss: this._shouldBackdropClose
       };
 
-      if (self.modalCssClass) {
-        modalOptions.cssClass = self.modalCssClass;
+      if (this.modalCssClass) {
+        modalOptions.cssClass = this.modalCssClass;
       }
 
-      if (self.modalEnterAnimation) {
-        modalOptions.enterAnimation = self.modalEnterAnimation;
+      if (this.modalEnterAnimation) {
+        modalOptions.enterAnimation = this.modalEnterAnimation;
       }
 
-      if (self.modalLeaveAnimation) {
-        modalOptions.leaveAnimation = self.modalLeaveAnimation;
+      if (this.modalLeaveAnimation) {
+        modalOptions.leaveAnimation = this.modalLeaveAnimation;
       }
 
-      self._modalController.create(modalOptions).then(modal => {
-        self._modal = modal;
+      this._modalController.create(modalOptions).then(modal => {
+        this._modal = modal;
         modal.present().then(() => {
           // Set focus after Modal has opened to avoid flickering of focus highlighting
           // before Modal opening.
-          self._setIonItemHasFocus(true);
+          this._setIonItemHasFocus(true);
           resolve();
         });
 
         modal.onWillDismiss().then(() => {
-          self._setIonItemHasFocus(false);
+          this._setIonItemHasFocus(false);
         });
 
         modal.onDidDismiss().then(event => {
-          self._isOpened = false;
-          self._itemsToConfirm = [];
+          this._isOpened = false;
+          this._itemsToConfirm = [];
 
           // Closed by clicking on backdrop outside modal.
           if (event.role === 'backdrop') {
-            self.onClose.emit({
-              component: self
+            this.onClose.emit({
+              component: this
             });
           }
         });
@@ -1581,20 +1681,18 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
    * @memberof IonicSelectableComponent
    */
   close(): Promise<void> {
-    const self = this;
-
-    return new Promise(function (resolve, reject) {
-      if (!self._isEnabled || !self._isOpened) {
+    return new Promise((resolve, reject) => {
+      if (!this._isEnabled || !this._isOpened) {
         reject('IonicSelectable is disabled or already closed.');
         return;
       }
 
-      self.propagateOnTouched();
-      self._isOpened = false;
-      self._itemToAdd = null;
-      self._modal?.dismiss().then(() => {
-        self._setIonItemHasFocus(false);
-        self.hideAddItemTemplate();
+      this.propagateOnTouched();
+      this._isOpened = false;
+      this._itemToAdd = null;
+      this._modal?.dismiss().then(() => {
+        this._setIonItemHasFocus(false);
+        this.hideAddItemTemplate();
         resolve();
       });
     });
@@ -1678,21 +1776,27 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
    * @memberof IonicSelectableComponent
    */
   scrollToTop(): Promise<void> {
-    const self = this;
-
-    return new Promise(function (resolve, reject) {
-      if (!self._isOpened) {
+    return new Promise((resolve, reject) => {
+      if (!this._isOpened) {
         reject('IonicSelectable content cannot be scrolled.');
         return;
       }
-      if (!self._modalComponent) {
-        return;
-      }
-      if (!self._modalComponent._content) {
+      if (!this._modalComponent) {
         return;
       }
 
-      self._modalComponent._content.scrollToTop().then(() => {
+      // With virtual scroll the viewport is the scrolling element, not ion-content.
+      if (this.hasVirtualScroll) {
+        this._modalComponent._virtualScrollViewport?.scrollToIndex(0);
+        resolve();
+        return;
+      }
+
+      if (!this._modalComponent._content) {
+        return;
+      }
+
+      this._modalComponent._content.scrollToTop().then(() => {
         resolve();
       });
     });
@@ -1706,21 +1810,29 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
    * @memberof IonicSelectableComponent
    */
   scrollToBottom(): Promise<void> {
-    const self = this;
-
-    return new Promise(function (resolve, reject) {
-      if (!self._isOpened) {
+    return new Promise((resolve, reject) => {
+      if (!this._isOpened) {
         reject('IonicSelectable content cannot be scrolled.');
         return;
       }
-      if (!self._modalComponent) {
-        return;
-      }
-      if (!self._modalComponent._content) {
+      if (!this._modalComponent) {
         return;
       }
 
-      self._modalComponent._content.scrollToBottom().then(() => {
+      // With virtual scroll the viewport is the scrolling element, not ion-content.
+      if (this.hasVirtualScroll) {
+        this._modalComponent._virtualScrollViewport?.scrollToIndex(
+          Math.max(this._virtualItems.length - 1, 0)
+        );
+        resolve();
+        return;
+      }
+
+      if (!this._modalComponent._content) {
+        return;
+      }
+
+      this._modalComponent._content.scrollToBottom().then(() => {
         resolve();
       });
     });
@@ -1760,6 +1872,7 @@ export class IonicSelectableComponent implements ControlValueAccessor, OnInit, D
     // See https://github.com/eakoriakin/ionic-selectable/issues/44.
     // Refresh items manually.
     this._setItems(this.items);
+    this._resetVirtualScroll();
     this._emitOnSearchSuccessOrFail(this._hasFilteredItems);
   }
 

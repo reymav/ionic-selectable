@@ -1,23 +1,25 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
 import { Port } from '../../types';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
 
 @Component({
   selector: 'infinite-scroll',
   templateUrl: './infinite-scroll.page.html',
-  styleUrls: ['./infinite-scroll.page.scss']
+  styleUrls: ['./infinite-scroll.page.scss'],
+  imports: [FormsModule, IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonTitle, IonToolbar, IonicSelectableModule]
 })
 export class InfiniteScrollPage implements OnInit {
+  private portService = inject(PortService);
+
   ports: Port[] = [];
   port: Port | undefined;
   page = 2;
   portsSubscription: Subscription | undefined;
-
-  constructor(
-    private portService: PortService
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts();

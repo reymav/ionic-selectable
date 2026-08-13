@@ -1,22 +1,25 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
 import { Port } from '../../types';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
+import { PipesModule } from '../../pipes';
 
 @Component({
   selector: 'on-search',
   templateUrl: './on-search.page.html',
-  styleUrls: ['./on-search.page.scss']
+  styleUrls: ['./on-search.page.scss'],
+  imports: [FormsModule, IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonTitle, IonToolbar, IonicSelectableModule, PipesModule]
 })
 export class OnSearchPage implements OnInit {
+  private portService = inject(PortService);
+
   ports: Port[] = [];
   port: Port | undefined;
   portsSubscription: Subscription | undefined;
-
-  constructor(
-    private portService: PortService
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts();

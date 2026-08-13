@@ -1,22 +1,24 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonItemGroup, IonLabel, IonListHeader, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
 
 @Component({
   selector: 'primitive-types',
   templateUrl: './primitive-types.page.html',
-  styleUrls: ['./primitive-types.page.scss']
+  styleUrls: ['./primitive-types.page.scss'],
+  imports: [FormsModule, IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonItemGroup, IonLabel, IonListHeader, IonTitle, IonToolbar, IonicSelectableModule]
 })
 export class PrimitiveTypesPage implements OnInit {
+  private portService = inject(PortService);
+
   ports: string[] = [];
   terminals: number[] = [];
   port: string | undefined;
   terminal: number | undefined;
   towageRequired: boolean | undefined;
-
-  constructor(
-    private portService: PortService
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts().map(port => port.name);

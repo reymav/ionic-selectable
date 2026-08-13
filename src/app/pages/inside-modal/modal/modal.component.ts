@@ -1,26 +1,35 @@
-import { Component, OnInit } from '@angular/core';
-import { ModalController } from '@ionic/angular';
+import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonTitle, IonToolbar, ModalController } from '@ionic/angular/standalone';
 import { Subscription } from 'rxjs';
-import { IonicSelectableComponent } from '../../../components/ionic-selectable/ionic-selectable.module';
+import { IonicSelectableComponent, IonicSelectableModule } from '../../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../../services';
 import { Port } from '../../../types';
 
 @Component({
   selector: 'app-modal',
   templateUrl: './modal.component.html',
-  styleUrls: ['./modal.component.scss']
+  styleUrls: ['./modal.component.scss'],
+  imports: [
+    FormsModule,
+    IonButton,
+    IonButtons,
+    IonContent,
+    IonHeader,
+    IonItem,
+    IonLabel,
+    IonTitle,
+    IonToolbar,
+    IonicSelectableModule
+  ]
 })
-export class ModalComponent implements OnInit {
+export class ModalComponent {
+  private modalController = inject(ModalController);
+  private portService = inject(PortService);
+
   ports: Port[] = [];
   port: Port | undefined;
   portsSubscription: Subscription | undefined;
-
-  constructor(
-    private modalController: ModalController,
-    private portService: PortService
-  ) { }
-
-  ngOnInit() { }
 
   close() {
     this.modalController.dismiss();

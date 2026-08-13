@@ -1,15 +1,24 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import {FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
 import { Country, Port } from '../../types';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonItemDivider, IonLabel, IonList, IonRow, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
+import { PipesModule } from '../../pipes';
 
 @Component({
   selector: 'footer-template',
   templateUrl: './footer-template.page.html',
   styleUrls: ['./footer-template.page.scss'],
+  imports: [ReactiveFormsModule, CommonModule, FormsModule, IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonItemDivider, IonLabel, IonList, IonRow, IonTitle, IonToolbar, IonicSelectableModule, PipesModule]
 })
 export class FooterTemplatePage implements OnInit {
+  private portService = inject(PortService);
+  private formBuilder = inject(FormBuilder);
+
   ports: Port[] = [];
   port: Port | undefined;
   countries: Country[] = [];
@@ -17,11 +26,6 @@ export class FooterTemplatePage implements OnInit {
   portForm!: FormGroup;
   portNameControl: FormControl | undefined;
   portCountryControl: FormControl | undefined;
-
-  constructor(
-    private portService: PortService,
-    private formBuilder: FormBuilder
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts();

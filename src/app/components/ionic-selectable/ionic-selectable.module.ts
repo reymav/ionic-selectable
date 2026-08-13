@@ -1,8 +1,4 @@
-import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
-import { ScrollingModule } from '@angular/cdk/scrolling';
 import { IonicSelectableAddItemTemplateDirective } from './ionic-selectable-add-item-template.directive';
 import { IonicSelectableCloseButtonTemplateDirective } from './ionic-selectable-close-button-template.directive';
 import { IonicSelectableFooterTemplateDirective } from './ionic-selectable-footer-template.directive';
@@ -37,6 +33,7 @@ export { IonicSelectableTitleTemplateDirective } from './ionic-selectable-title-
 export { IonicSelectableValueTemplateDirective } from './ionic-selectable-value-template.directive';
 export { IonicSelectableIconTemplateDirective } from './ionic-selectable-icon-template.directive';
 export { IonicSelectableComponent } from './ionic-selectable.component';
+export type { IonicSelectableVirtualItem } from './ionic-selectable.component';
 
 const components = [IonicSelectableComponent, IonicSelectableModalComponent],
   directives = [
@@ -57,14 +54,14 @@ const components = [IonicSelectableComponent, IonicSelectableModalComponent],
     IonicSelectableIconTemplateDirective
   ];
 
+/**
+ * Everything is standalone now, so this module only re-exports the component
+ * and its directives. It's kept so that apps doing
+ * `imports: [IonicSelectableModule]` keep working; standalone apps can import
+ * `IonicSelectableComponent` and the directives directly instead.
+ */
 @NgModule({
   imports: [
-    CommonModule,
-    FormsModule,
-    IonicModule,
-    ScrollingModule
-  ],
-  declarations: [
     ...components,
     ...directives
   ],

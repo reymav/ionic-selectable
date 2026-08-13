@@ -1,16 +1,24 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import {FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
 import { Country, Port } from '../../types';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonLabel, IonList, IonListHeader, IonRow, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
+import { PipesModule } from '../../pipes';
 
 @Component({
   selector: 'adding-on-search-fail-async',
   templateUrl: './adding-on-search-fail-async.page.html',
   styleUrls: ['./adding-on-search-fail-async.page.scss'],
+  imports: [ReactiveFormsModule, FormsModule, IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonLabel, IonList, IonListHeader, IonRow, IonTitle, IonToolbar, IonicSelectableModule, PipesModule]
 })
 export class AddingOnSearchFailAsyncPage implements OnInit {
+  private portService = inject(PortService);
+  private formBuilder = inject(FormBuilder);
+
   ports: Port[] = [];
   countries: Country[] = [];
   port: Port | undefined;
@@ -19,11 +27,6 @@ export class AddingOnSearchFailAsyncPage implements OnInit {
   portCountryControl: FormControl | undefined;
   portsSubscription: Subscription | undefined;
   @ViewChild('portComponent') portComponent: IonicSelectableComponent | undefined;
-
-  constructor(
-    private portService: PortService,
-    private formBuilder: FormBuilder
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts();

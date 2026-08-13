@@ -1,15 +1,23 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import {FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
 import { Country, Port } from '../../types';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonLabel, IonList, IonListHeader, IonRow, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
+import { PipesModule } from '../../pipes';
 
 @Component({
   selector: 'adding-on-search-fail',
   templateUrl: './adding-on-search-fail.page.html',
-  styleUrls: ['./adding-on-search-fail.page.scss']
+  styleUrls: ['./adding-on-search-fail.page.scss'],
+  imports: [ReactiveFormsModule, FormsModule, IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonLabel, IonList, IonListHeader, IonRow, IonTitle, IonToolbar, IonicSelectableModule, PipesModule]
 })
 export class AddingOnSearchFailPage implements OnInit {
+  private portService = inject(PortService);
+  private formBuilder = inject(FormBuilder);
+
   ports: Port[] = [];
   port: Port | undefined;
   countries: Country[] = [];
@@ -17,11 +25,6 @@ export class AddingOnSearchFailPage implements OnInit {
   portNameControl: FormControl | undefined;
   portCountryControl: FormControl | undefined;
   @ViewChild('portComponent') portComponent: IonicSelectableComponent | undefined;
-
-  constructor(
-    private portService: PortService,
-    private formBuilder: FormBuilder
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts();

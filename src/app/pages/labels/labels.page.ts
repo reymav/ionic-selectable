@@ -1,13 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { PortService } from '../../services';
 import { Port } from '../../types';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonItem, IonItemGroup, IonLabel, IonListHeader, IonSelect, IonSelectOption, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
 
 @Component({
   selector: 'labels',
   templateUrl: './labels.page.html',
-  styleUrls: ['./labels.page.scss']
+  styleUrls: ['./labels.page.scss'],
+  imports: [FormsModule, IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonItem, IonItemGroup, IonLabel, IonListHeader, IonSelect, IonSelectOption, IonTitle, IonToolbar, IonicSelectableModule]
 })
 export class LabelsPage implements OnInit {
+  private portService = inject(PortService);
+
   ports: Port[] = [];
   portEmpty: Port | undefined;
   portEmptyNative: number | undefined;
@@ -19,10 +25,6 @@ export class LabelsPage implements OnInit {
   portStackedNative: number | undefined;
   portFloating: Port | undefined;
   portFloatingNative: number | undefined;
-
-  constructor(
-    private portService: PortService
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts();

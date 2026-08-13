@@ -326,11 +326,9 @@ export class PortService {
   }
 
   addPortAsync(port: Port, timeout = 1000): Observable<any> {
-    const self = this;
-
     return new Observable<any>(observer => {
-      self.addPort(port);
-      observer.next();
+      this.addPort(port);
+      observer.next(null);
       observer.complete();
     }).pipe(delay(timeout));
   }
@@ -348,11 +346,9 @@ export class PortService {
   }
 
   deletePortAsync(port: Port, timeout = 1000): Observable<any> {
-    const self = this;
-
     return new Observable<any>(observer => {
-      self.deletePort(port);
-      observer.next();
+      this.deletePort(port);
+      observer.next(null);
       observer.complete();
     }).pipe(delay(timeout));
   }

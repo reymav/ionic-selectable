@@ -1,22 +1,25 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
 import { Country, Port } from '../../types';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonBadge, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
 
 @Component({
   selector: 'find-ports',
   templateUrl: './find-ports.page.html',
   styleUrls: ['./find-ports.page.scss'],
+  imports: [CommonModule, FormsModule, IonBackButton, IonBadge, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonTitle, IonToolbar, IonicSelectableModule]
 })
 export class FindPortsPage implements OnInit {
+  portService = inject(PortService);
+
   ports: Port[] = [];
   port: Port | undefined;
   countries: Country[] = [];
   country: Port | undefined;
-
-  constructor(
-    public portService: PortService
-  ) { }
 
   ngOnInit() {
     this.ports = this.portService.getPorts();
@@ -57,7 +60,7 @@ export class FindPortsPage implements OnInit {
     });
   }
 
-  countryChange(event: {
+  countryChange(_event: {
     component: IonicSelectableComponent,
     value: any
   }) {

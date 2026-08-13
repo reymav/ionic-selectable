@@ -1,11 +1,15 @@
 import { NgModule } from '@angular/core';
 import { WikiUrlPipe } from './wiki-url.pipe';
 
+export { WikiUrlPipe } from './wiki-url.pipe';
+
 const pipes = [WikiUrlPipe];
 
+/**
+ * The pipe is standalone, so this module only re-exports it.
+ */
 @NgModule({
-  declarations: [pipes],
-  imports: [],
-  exports: [pipes]
+  imports: [...pipes],
+  exports: [...pipes]
 })
 export class PipesModule { }

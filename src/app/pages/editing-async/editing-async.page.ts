@@ -1,16 +1,24 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import {FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { IonicSelectableComponent } from '../../components/ionic-selectable/ionic-selectable.module';
 import { PortService } from '../../services';
 import { Country, Port } from '../../types';
+import { FormsModule } from '@angular/forms';
+import { IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonItemDivider, IonLabel, IonList, IonRow, IonTitle, IonToolbar } from '@ionic/angular/standalone';
+import { IonicSelectableModule } from '../../components/ionic-selectable/ionic-selectable.module';
+import { PipesModule } from '../../pipes';
 
 @Component({
   selector: 'editing-async',
   templateUrl: './editing-async.page.html',
   styleUrls: ['./editing-async.page.scss'],
+  imports: [ReactiveFormsModule, FormsModule, IonBackButton, IonButton, IonButtons, IonCol, IonContent, IonFooter, IonHeader, IonInput, IonItem, IonItemDivider, IonLabel, IonList, IonRow, IonTitle, IonToolbar, IonicSelectableModule, PipesModule]
 })
 export class EditingAsyncPage implements OnInit {
+  private portService = inject(PortService);
+  private formBuilder = inject(FormBuilder);
+
   ports: Port[] = [];
   port: Port | undefined;
   countries: Country[] = [];
@@ -19,11 +27,6 @@ export class EditingAsyncPage implements OnInit {
   portCountryControl: FormControl | undefined;
   portsSubscription: Subscription | undefined;
   @ViewChild('portComponent') portComponent: IonicSelectableComponent | undefined;
-
-  constructor(
-    private portService: PortService,
-    private formBuilder: FormBuilder
-  ) { }
 
   ngOnInit() {
     this.countries = this.portService.getCountries();
